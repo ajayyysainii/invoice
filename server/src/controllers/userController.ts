@@ -119,4 +119,14 @@ const validate =async (req:Request,res:Response)=>{
     }
 }
 
-export {registerUser,loginUser,googleAuth,googleAuthCallback,validate}
+const allInformations=async (req:Request,res:Response)=>{
+    try {
+        const users=await userModel.find({},{name:1,gender:1,_id:0});
+        return res.json({success:true,message:"All information fetched",users})
+    } catch (error:any) {
+        console.log("Error in Validate User ", error);
+        res.json({ success: false, message: error.message });
+    }
+}
+
+export {registerUser,loginUser,googleAuth,googleAuthCallback,validate,allInformations}

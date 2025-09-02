@@ -1,5 +1,5 @@
 import express from "express"
-import { googleAuth, googleAuthCallback, loginUser, registerUser, validate } from "../controllers/userController"
+import { allInformations, googleAuth, googleAuthCallback, loginUser, registerUser, validate } from "../controllers/userController"
 import authUser from "../middlewares/authUser"
 import passport from "passport"
 // import  jwt from "jsonwebtoken"
@@ -13,6 +13,7 @@ userRouter.get("/auth/google/callback",passport.authenticate("google", { failure
 userRouter.post('/auth/register',registerUser)
 userRouter.post('/auth/login',loginUser)
 userRouter.get('/auth/validate',authUser,validate)
+userRouter.get('/info/all-users',allInformations)
 
 
 export default userRouter
