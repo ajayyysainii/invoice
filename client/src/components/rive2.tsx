@@ -1,6 +1,6 @@
 "use client"
-import { useRive, useStateMachineInput, Fit, Layout,Alignment  } from '@rive-app/react-canvas';
-import { useEffect, useState } from 'react';
+import { useRive, Fit, Layout,Alignment  } from '@rive-app/react-canvas';
+import { useEffect } from 'react';
 
 export default function Simple1() {
     const { rive, RiveComponent } = useRive({
