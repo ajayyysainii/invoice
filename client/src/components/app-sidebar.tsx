@@ -23,24 +23,19 @@ import {
 // Menu items.
 const items = [
   {
-    title: "Home",
+    title: "Dashboard",
     url: "/dashboard/hel",
     icon: Home,
   },
   {
-    title: "Inbox",
+    title: "Create Invoice",
     url: "/dashboard/create",
     icon: Inbox,
   },
   {
-    title: "Calendar",
+    title: "Invoice List",
     url: "#",
     icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "#",
-    icon: Search,
   },
   {
     title: "Settings",
