@@ -38,6 +38,11 @@ const items = [
     icon: Calendar,
   },
   {
+    title: "Manage Buyers",
+    url: "/dashboard/buyers",
+    icon: Calendar,
+  },
+  {
     title: "Settings",
     url: "#",
     icon: Settings,

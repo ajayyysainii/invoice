@@ -1,5 +1,14 @@
+"use client"
+import InvoiceForm from "@/components/ui/invoiceForm"
+import { useState } from "react"
+
 
 const Create = () => {
+  const [invoiceNumber, setInvoiceNumber] = useState("1234567890");
+
+  const handleInvoiceNumberChange = (value: string) => {
+    setInvoiceNumber(value);
+  };
 
 
   const data = [
@@ -10,12 +19,14 @@ const Create = () => {
 
   return (
     <div className="flex justify-center h-screen">
-      <div className="w-[50%] mx-2 my-2 rounded-md p-4 ring-1 ring-gray-200"> adw</div>
+      <div className="w-[50%] mx-2 my-2 rounded-md p-4 ring-1 ring-gray-200"> 
+        <InvoiceForm onInvoiceNumberChange={handleInvoiceNumberChange}/>
+      </div>
       <div className="bg-[#fafafa] w-[50%] mx-2 my-2 rounded-md p-4 ring-1 ring-gray-200">
         <h1 className="py-5 text-2xl font-semibold">Preview</h1>
         <div className="bg-white rounded-md p-4">
           <h2>Inovice</h2>
-          <p>Invoice Number: 1234567890</p>
+          <p>Invoice Number: {invoiceNumber}</p>
           <div className="max-w-4xl bg-white border border-gray-300 rounded-lg overflow-hidden mt-5">
             <div className="grid grid-cols-2">
               <div className="p-3 border-r border-gray-300">
