@@ -1,6 +1,6 @@
 "use client"
 import React from 'react'
-import axios from 'axios'
+import { createBuyer } from '@/api/buyers'
 import { useForm, SubmitHandler } from "react-hook-form"
 
 type Inputs = {
@@ -21,17 +21,12 @@ const BuyerCreate = () => {
         formState: { errors },
     } = useForm<Inputs>()
 
-    const onSubmit: SubmitHandler<Inputs> = async (data) => {
+     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         console.log(data)
         try {
-            const token = {
-                headers: {
-                    "Authorization": `Bearer ${localStorage.getItem('accessToken')}`
-                }
-            }
-            await axios.post("http://localhost:4000/buyer/create", {
+            await createBuyer({
                 ...data
-            }, token);
+            })
 
         } catch (error) {
             alert("There is error" + error)

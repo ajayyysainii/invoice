@@ -8,6 +8,7 @@ const router = Router();
 
 router.post("/create",verifyToken, buyersController.createBuyer);
 router.get('/list',verifyToken,buyersController.listBuyer)
+router.get('/detail/:buyerId',verifyToken,buyersController.getBuyerDetail)
 
 
 

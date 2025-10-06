@@ -9,7 +9,7 @@ const ManageBuyers = () => {
                 <BuyerCreate/>
             </div>
             <div className='w-[50%] bg-orange-200 flex flex-col justify-center items-center'>
-               <BuyersList/>
+               <BuyersList />
             </div>
         </div>
     )
