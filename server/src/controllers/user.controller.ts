@@ -18,7 +18,7 @@ export class UserController {
             if (!validator.isEmail(email))
                 return res.json({ success: false, message: "Invalid Email" });
     
-            const existingUser=await User.findOne({email})
+            const existingUser=await User.findOne({email});
     
             if(existingUser)
                 return res.json({ success: false, message: "User Already Exists" });
