@@ -1,4 +1,5 @@
-import { Calendar, Home, Inbox, Search, Settings, ChevronUp, User2 } from "lucide-react"
+"use client"
+import { Calendar, Home, Inbox, Settings, ChevronUp, User2 } from "lucide-react"
 import {
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -19,6 +20,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+
+import { removeToken } from "@/utils/auth"
+import { useRouter } from "next/navigation"
 
 // Menu items.
 const items = [
@@ -50,6 +54,8 @@ const items = [
 ]
 
 export function AppSidebar() {
+  const router = useRouter()
+ 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -96,7 +102,7 @@ export function AppSidebar() {
                 <DropdownMenuItem>
                   <span>Billing</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { removeToken(); router.push('/login') }}>
                   <span>Sign out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>

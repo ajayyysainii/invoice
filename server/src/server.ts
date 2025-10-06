@@ -1,20 +1,21 @@
-import app from './app'
 import express, { Request, Response } from "express"
 import cors from "cors"
 import 'dotenv/config'
 import connectDB from "./config/mongodb"
-import userRouter from "./routes/userRouter";
-import passport from "passport";
-import session from "express-session";
-import "./config/passport";
+import MODULE_ROUTE_MAPPING from "./app";
+import { server } from "typescript";
+import morgan from 'morgan'
+
 
 
 const app = express();
 const port=process.env.PORT || 4000
-connectDB()
+
+connectDB();
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
+app.use(morgan("dev"))
 app.use(cors(
     {
     origin: process.env.FRONTEND_URL,
@@ -22,41 +23,21 @@ app.use(cors(
   }
 )) 
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET as string,
-    resave: false,
-    saveUninitialized: true,
-  })
-)
 
 
-app.use(passport.initialize());
-app.use(passport.session());
 
+app.get("/",(req:Request,res: Response)=>{
+    res.send("Invoice Backend !!")
+});
 
-const apiCheck=async (req:Request,res:Response)=>{
-    try {
-        console.log("API CALL")
-        const result ={
-            ui:"ayush",
-            frontend:"Ajay",
-            backend:"Ajay",
-            ml:"Vivek"
-        }
-        res.json({success:true,result});
-    } catch (error:any) {
-        console.error("Error in checking api for home page ",error)
-        res.status(500).json({success:false,message:error.message});
-    }
-}
-
-
-app.get("/",apiCheck);
-app.use("/api/v1/",userRouter)
+MODULE_ROUTE_MAPPING.forEach(({prefix,router})=>{
+    app.use(prefix,router);
+})
 
 
 app.listen(port, () => {
-    console.log("done");
+    console.log(`Server is Running! at Port ${port}`);
 });
+
+
 

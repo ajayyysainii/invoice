@@ -4,7 +4,7 @@ import { useState } from "react"
 
 
 const Create = () => {
-  const [invoiceNumber, setInvoiceNumber] = useState("1234567890");
+  const [invoiceNumber, setInvoiceNumber] = useState();
 
   const handleInvoiceNumberChange = (value: string) => {
     setInvoiceNumber(value);
