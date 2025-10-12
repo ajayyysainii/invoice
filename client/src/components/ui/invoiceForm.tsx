@@ -1,13 +1,16 @@
 "use client"
 import { useForm, SubmitHandler } from "react-hook-form";
 import { createInvoice } from '@/api/invoice'
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { getBuyers, Buyer } from "@/api/buyers";
+import InvoiceContext from "@/context/InvoiceContext";
+
 
 
 type Inputs = {
     invoice: string,
     dueDate: string
+    address: string
 };
 
 interface InvoiceFormProps {
@@ -50,6 +53,13 @@ const InvoiceForm = ({ onInvoiceNumberChange }: InvoiceFormProps) => {
                         placeholder="enter invoice number"
                         {...register('invoice')}
                         onChange={handleInvoiceChange}
+                    />
+
+                </div>
+                <div>
+                    <input
+                        placeholder="enter address"
+                        {...register('address')}
                     />
 
                 </div>
