@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useState } from "react";
-import InvoiceContext from "./InvoiceContext";
+import React, { PropsWithChildren, useState } from "react";
+import InvoiceContext, { InvoiceFormValues } from "./InvoiceContext";
 
-const InvoiceContextProvider = ({ children }) => {
-    const [invoiceData, setInvoiceData] = useState(null);
+const InvoiceContextProvider = ({ children }: PropsWithChildren) => {
+    const [invoiceData, setInvoiceData] = useState<InvoiceFormValues | null>(null);
     
     return (
         <InvoiceContext.Provider value={{ invoiceData, setInvoiceData }}>

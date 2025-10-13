@@ -23,4 +23,10 @@ export async function createBuyer(payload: BuyerPayload): Promise<void> {
     await api.post('/buyer/create', payload)
 }
 
+export async function getBuyerDetail(buyerId : any):Promise<void> {
+    await api.get(`/buyer/detail/${buyerId}`)
+}
+
+
+
 
