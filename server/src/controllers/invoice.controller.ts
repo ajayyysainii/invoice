@@ -36,13 +36,14 @@ export class InvoiceController{
         try {
             const userId = (req.user as unknown as { id?: string })?.id;
 
-            const invoiceList = await Invoice.find({userId})
+            const invoiceList = await Invoice.find({userId}).populate('buyerId')
+                
 
             res.status(200).json(invoiceList);
 
 
         } catch (error) {
-            res.status(400).json({error})
+            res.status(400).json(error)
         }
     }
 

@@ -20,7 +20,7 @@ const InvoiceSchema = new Schema<IInvoice>({
     buyerId: {
         type: mongoose.Schema.ObjectId,
         required: false,
-        ref: 'Buyer'
+        ref: 'Buyers'
     },
     itemsId: {
         type: mongoose.Schema.ObjectId,
