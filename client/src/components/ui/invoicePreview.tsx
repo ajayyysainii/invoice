@@ -4,6 +4,8 @@ import React, { useContext, useEffect, useRef, useState, useCallback } from 'rea
 import InvoiceContext from '@/context/InvoiceContext'
 import { getBuyerDetail } from '@/api/buyers'
 
+
+
 type BuyerData = {
   _id?: string;
   id?: string;
@@ -16,17 +18,18 @@ type BuyerData = {
 const InvoicePreview = () => {
   const invoiceContext = useContext(InvoiceContext);
   const invoiceData = invoiceContext?.invoiceData ?? null;
+  const setGrandTotal = invoiceContext?.setGrandTotal;
   const [buyerData, setBuyerData] = useState<BuyerData>(null);
 
   // Log only when invoiceData meaningfully changes (deep compare)
   const prevSerializedRef = useRef<string | null>(null);
   const serialized = JSON.stringify(invoiceData);
-  
+
   const apiCall = useCallback(async () => {
     try {
       const buyersId = invoiceData?.buyerId;
       if (!buyersId) return;
-      
+
       const response = await getBuyerDetail(buyersId);
       console.log(response);
       setBuyerData(response as unknown as BuyerData);
@@ -50,6 +53,26 @@ const InvoicePreview = () => {
   }, [serialized, invoiceData, apiCall])
 
   const items = invoiceData?.items ?? [];
+  const grandTotal = items.reduce((acc, currentItem) => {
+    const quantity = Number(currentItem.quantity) || 0;
+    const discount = Number(currentItem.discount) || 0;
+    const tax = Number(currentItem.tax) || 0;
+    const price = Number(currentItem.price) || 0;
+    const subtotal = price * quantity;
+    const taxAmount = subtotal * (tax / 100);
+    const preDiscountTotal = subtotal + taxAmount;
+    const discountAmount = preDiscountTotal * (discount / 100);
+    const total = preDiscountTotal - discountAmount;
+    return acc + total;
+  }, 0);
+
+  useEffect(() => {
+    if (setGrandTotal) {
+      setGrandTotal(grandTotal);
+    }
+  }, [grandTotal, setGrandTotal]);
+
+  
 
   return (
     <>
@@ -77,7 +100,7 @@ const InvoicePreview = () => {
           <div className="p-3 border-t border-gray-300">
             <div className="text-gray-500 mb-3">Address</div>
             <div className="text-gray-900 text-xl">
-              {invoiceData?.address || buyerData?.address || '-'}
+              {buyerData?.address || ''}
             </div>
           </div>
         </div>
@@ -85,30 +108,43 @@ const InvoicePreview = () => {
           <thead className="border-b-1">
             <tr className="bg-[#fafafa] m-5">
               <th>Item</th>
+              <th>Price</th>
               <th>QTY</th>
-              <th>Rate</th>
               <th>Tax</th>
+              <th>Discount</th>
               <th>Total</th>
             </tr>
           </thead>
           <tbody className="">
             {items.map((item, idx) => {
               const quantity = Number(item.quantity) || 0;
-              const rate = Number(item.rate) || 0;
+              const discount = Number(item.discount) || 0;
               const tax = Number(item.tax) || 0;
-              const total = quantity * rate * (tax / 100);
+              const price = Number(item.price) || 0;
+              const subtotal = price * quantity;
+              const taxAmount = subtotal * (tax / 100);
+              const preDiscountTotal = subtotal + taxAmount;
+              const discountAmount = preDiscountTotal * (discount / 100);
+              const total = preDiscountTotal - discountAmount;
               return (
                 <tr key={idx}>
                   <td>{item.item}</td>
+                  <td>{price}</td>
                   <td>{quantity}</td>
-                  <td>{rate}</td>
                   <td>{tax}</td>
+                  <td>{discount}</td>
                   <td>{total}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
+        <div className="w-full mt-4 flex justify-end">
+          <div className="text-right">
+            <div className="text-gray-500">Total</div>
+            <div className="text-2xl font-semibold">{grandTotal}</div>
+          </div>
+        </div>
       </div>
     </>
   )

@@ -1,36 +1,52 @@
 import mongoose from "mongoose";
 import { Schema } from "mongoose";
 
-interface IItems{
-    invoiceId: mongoose.Types.ObjectId
-    itemsName: string
+interface IItemsDetail{
+    item: string
     quantity: number
     price: number
     tax:number
-    itemTotal:number
+    discount:number
+    total:number
 }
+
+interface IItems{
+    invoiceId: mongoose.Types.ObjectId
+    items: IItemsDetail[]
+}
+
+const itemDetailSchema = new Schema({
+    item: {
+        type: String,
+    },
+    quantity: {
+        type: Number,
+    },
+    price: {
+        type: Number,
+    },
+    tax: {
+        type: Number,
+        default: 0
+    },
+    discount: {
+        type: Number,
+        default: 0
+    },
+    total: {
+        type: Number,
+    }
+}, { _id: false })
 
 const itemsSchema = new Schema({
     invoiceId: {
         type: mongoose.Schema.ObjectId,
-        require: true,
-        ref:'Invoice'
+        ref: 'Invoice'
     },
-    itemsName:{
-        type: String,
-    },
-    quantity:{
-        type: Number
-    },
-    price:{
-        type: Number
-    },
-    tax:{
-        type: Number
-    },
-    itemTotal:{
-        type: Number
-    }  
+    items: {
+        type: [itemDetailSchema],
+        default: []
+    }
 },{
     timestamps: true
 })

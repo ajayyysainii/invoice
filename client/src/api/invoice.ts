@@ -1,8 +1,12 @@
 import api from './axios'
+import { InvoiceItem } from '@/context/InvoiceContext'
 
 export interface InvoicePayload {
     invoice: string
     dueDate: string
+    buyerId?: string
+    items?: InvoiceItem[]
+    totalAmount?: number
 }
 
 export async function createInvoice(payload: InvoicePayload): Promise<void> {

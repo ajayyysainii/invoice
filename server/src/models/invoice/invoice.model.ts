@@ -1,9 +1,9 @@
-import mongoose, {mongo, Schema} from "mongoose";
+import mongoose, { mongo, Schema } from "mongoose";
 
-interface IInvoice{
-    userId:mongoose.Types.ObjectId
-    buyerId:mongoose.Types.ObjectId
-    itemsId:mongoose.Types.ObjectId
+interface IInvoice {
+    userId: mongoose.Types.ObjectId
+    buyerId: mongoose.Types.ObjectId
+    itemsId: mongoose.Types.ObjectId
     invoiceNumber: string
     dueDate: string
     amount: number
@@ -13,39 +13,39 @@ interface IInvoice{
 
 const InvoiceSchema = new Schema<IInvoice>({
     userId: {
-        type:mongoose.Schema.ObjectId,
-        required: true,
+        type: mongoose.Schema.ObjectId,
+        required: false,
         ref: 'User'
     },
     buyerId: {
-        type:mongoose.Schema.ObjectId,
-        required: true,
+        type: mongoose.Schema.ObjectId,
+        required: false,
         ref: 'Buyer'
     },
     itemsId: {
-        type:mongoose.Schema.ObjectId,
-        required: true,
+        type: mongoose.Schema.ObjectId,
+        required: false,
         ref: 'Items'
     },
-    invoiceNumber:{
+    invoiceNumber: {
         type: String
     },
-    dueDate:{
-        type:String
+    dueDate: {
+        type: String
     },
-    amount:{
-        type:Number
+    amount: {
+        type: Number
     },
-    discount:{
-        type:Number
+    discount: {
+        type: Number
     },
-    totalAmount:{
-        type:Number
+    totalAmount: {
+        type: Number
     }
-},{
+}, {
     timestamps: true
 })
 
-const Invoice = mongoose.model<IInvoice>('Invoice',InvoiceSchema)
+const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)
 
 export default Invoice;

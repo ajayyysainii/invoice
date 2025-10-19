@@ -1,5 +1,6 @@
 import userRouter from "./routes/user.route"
 import buyerRoute from "./routes/buyer.route"
+import invoiceRoute from './routes/invoice.route'
 
 const MODULE_ROUTE_MAPPING = [
     {
@@ -9,6 +10,10 @@ const MODULE_ROUTE_MAPPING = [
     {
         prefix: '/buyer',
         router: buyerRoute
+    },
+    {
+        prefix: '/invoice',
+        router: invoiceRoute
     }
 ]
 

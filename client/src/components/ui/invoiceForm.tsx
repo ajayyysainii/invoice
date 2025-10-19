@@ -1,5 +1,5 @@
 "use client"
-import { useForm, SubmitHandler,useFieldArray } from "react-hook-form";
+import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
 import { createInvoice } from '@/api/invoice'
 
 import { useEffect, useState, useContext } from "react";
@@ -19,6 +19,7 @@ const InvoiceForm = () => {
 
     const contextValue = useContext(InvoiceContext);
     const setInvoiceData = contextValue?.setInvoiceData;
+    const grandTotal = contextValue?.grandTotal ?? 0;
 
     useEffect(() => {
         (async () => {
@@ -35,12 +36,11 @@ const InvoiceForm = () => {
         defaultValues: {
             invoice: '',
             dueDate: '',
-            address: '',
             buyerId: '',
-            items: [{ item: '', quantity: 0, rate: 0, tax: 0, total: 0 }],
+            items: [{ item: '', quantity: 0, price: 0, tax: 0, discount: 0 }],
         },
     });
-    
+
     // Watch all form values and sync to context on every change
     const watchedFormValues = watch();
     useEffect(() => {
@@ -48,13 +48,16 @@ const InvoiceForm = () => {
             setInvoiceData({ ...watchedFormValues });
         }
     }, [watchedFormValues, setInvoiceData]);
-    
+
     const onSubmit: SubmitHandler<FormValues> = async (data) => {
         console.log(data)
-        await createInvoice(data)
+        await createInvoice({
+            ...data,
+            totalAmount: grandTotal
+        })
     };
 
-    
+
 
     const { fields, append, remove } = useFieldArray({
         control,
@@ -66,23 +69,15 @@ const InvoiceForm = () => {
         <>
             <div>invoiceForm</div>
 
-        <form className="bg-amber-300" onSubmit={handleSubmit(onSubmit)}>
+            <form className="bg-amber-300" onSubmit={handleSubmit(onSubmit)}>
                 <div>
                     <input
                         placeholder="enter invoice number"
                         {...register('invoice')}
-                        
+
                     />
 
                 </div>
-                <div>
-                    <input
-                        placeholder="enter address"
-                        {...register('address')}
-                    />
-
-                </div>
-
                 <div>
                     <label htmlFor="dueDate">Due Date:</label>
                     <input type="date" {...register('dueDate')} />
@@ -103,10 +98,10 @@ const InvoiceForm = () => {
                         <thead>
                             <tr className="bg-gray-100">
                                 <th className="border border-gray-300 px-2 py-1 text-left">Item</th>
+                                <th className="border border-gray-300 px-2 py-1 text-left">Price</th>
                                 <th className="border border-gray-300 px-2 py-1 text-left">Quantity</th>
-                                <th className="border border-gray-300 px-2 py-1 text-left">Rate</th>
                                 <th className="border border-gray-300 px-2 py-1 text-left">Tax</th>
-                                <th className="border border-gray-300 px-2 py-1 text-left">Total</th>
+                                <th className="border border-gray-300 px-2 py-1 text-left">Discount</th>
                                 <th className="border border-gray-300 px-2 py-1 text-left">Action</th>
                             </tr>
                         </thead>
@@ -117,20 +112,20 @@ const InvoiceForm = () => {
                                         <input type="text" className="w-full border-none outline-none" {...register(`items.${index}.item`)} />
                                     </td>
                                     <td className="border border-gray-300 px-2 py-1">
-                                        <input type="number" className="w-full border-none outline-none" {...register(`items.${index}.quantity`)} />
+                                        <input type="number" className="w-full border-none outline-none" {...register(`items.${index}.price`)} />
                                     </td>
                                     <td className="border border-gray-300 px-2 py-1">
-                                        <input type="number" className="w-full border-none outline-none" {...register(`items.${index}.rate`)} />
+                                        <input type="number" className="w-full border-none outline-none" {...register(`items.${index}.quantity`)} />
                                     </td>
                                     <td className="border border-gray-300 px-2 py-1">
                                         <input type="number" className="w-full border-none outline-none" {...register(`items.${index}.tax`)} />
                                     </td>
                                     <td className="border border-gray-300 px-2 py-1">
-                                        <input type="number" className="w-full border-none outline-none" {...register(`items.${index}.total`)} />
+                                        <input type="number" className="w-full border-none outline-none" {...register(`items.${index}.discount`)} />
                                     </td>
                                     <td className="border border-gray-300 px-2 py-1">
-                                        <button 
-                                            type="button" 
+                                        <button
+                                            type="button"
                                             className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
                                             onClick={() => remove(index)}
                                         >
@@ -141,7 +136,7 @@ const InvoiceForm = () => {
                             ))}
                         </tbody>
                     </table>
-                    <button type="button" onClick={() => append({ item: '', quantity: 0, rate: 0, tax: 0, total: 0 })}>
+                    <button type="button" onClick={() => append({ item: '', price: 0, quantity: 0, tax: 0, discount: 0 })}>
                         Add Item
                     </button>
                 </div>
@@ -154,4 +149,4 @@ const InvoiceForm = () => {
     )
 }
 
-export default InvoiceForm
+export default InvoiceForm;
