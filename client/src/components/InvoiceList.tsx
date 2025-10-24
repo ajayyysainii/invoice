@@ -1,6 +1,7 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
+import InvoicePDF from './ui/InvoicePDF'
 
 interface Buyer {
   _id: string
@@ -12,6 +13,14 @@ interface Buyer {
   gst: string
 }
 
+interface InvoiceItem {
+  item: string
+  quantity: number
+  price: number
+  tax: number
+  discount: number
+}
+
 interface Invoice {
   _id: string
   userId: string
@@ -21,6 +30,7 @@ interface Invoice {
   totalAmount: number
   createdAt: string
   updatedAt: string
+  items: InvoiceItem[]
 }
 
 interface InvoiceListProps {
@@ -29,6 +39,8 @@ interface InvoiceListProps {
 }
 
 const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, loading = false }) => {
+  const [invoicePdf, setInvoicePdf] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -45,6 +57,17 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, loading = false }) 
       maximumFractionDigits: 0
     }).format(amount)
   }
+
+  const handleDownload = (invoice: Invoice) => {
+    setSelectedInvoice(invoice)
+    setInvoicePdf(true)
+  }
+
+  const handleClosePDF = () => {
+    setInvoicePdf(false)
+    setSelectedInvoice(null)
+  }
+
 
   if (loading) {
     return (
@@ -142,7 +165,10 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, loading = false }) 
                   <button className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                     Edit
                   </button>
-                  <button className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <button 
+                    onClick={() => handleDownload(invoice)}
+                    className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
                     Download
                   </button>
                 </div>
@@ -151,6 +177,13 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, loading = false }) 
           </div>
         </div>
       ))}
+      
+      {invoicePdf && selectedInvoice && (
+        <InvoicePDF 
+          onClose={handleClosePDF}
+          invoice={selectedInvoice}
+        />
+      )}
     </div>
   )
 }

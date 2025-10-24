@@ -37,8 +37,8 @@ const items = [
     icon: Inbox,
   },
   {
-    title: "Invoice List",
-    url: "#",
+    title: "Invoice Lists",
+    url: "/dashboard/invoiceList",
     icon: Calendar,
   },
   {

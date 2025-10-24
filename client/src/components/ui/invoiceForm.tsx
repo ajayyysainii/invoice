@@ -5,6 +5,7 @@ import { createInvoice } from '@/api/invoice'
 import { useEffect, useState, useContext } from "react";
 import { getBuyers, Buyer } from "@/api/buyers";
 import InvoiceContext, { InvoiceFormValues } from "@/context/InvoiceContext";
+import Pdf from "./pdf";
 // import InvoiceContext from "@/context/InvoiceContext";
 
 
@@ -143,7 +144,7 @@ const InvoiceForm = () => {
 
                 <input className="bg-blue-600 px-2 text-white font-semibold" type="submit" />
             </form>
-
+            {/* <Pdf /> */}
         </>
 
     )

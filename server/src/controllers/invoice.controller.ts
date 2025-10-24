@@ -21,6 +21,7 @@ export class InvoiceController{
             const {items} = req.body;
             const itemDetail = await Items.create({invoiceId,items})
 
+
             console.log(invoiceDetail)
             console.log(itemDetail)
             
@@ -37,9 +38,19 @@ export class InvoiceController{
             const userId = (req.user as unknown as { id?: string })?.id;
 
             const invoiceList = await Invoice.find({userId}).populate('buyerId')
-                
-
-            res.status(200).json(invoiceList);
+            
+            // Fetch items for each invoice
+            const invoicesWithItems = await Promise.all(
+                invoiceList.map(async (invoice) => {
+                    const items = await Items.findOne({ invoiceId: invoice._id });
+                    return {
+                        ...invoice.toObject(),
+                        items: items?.items || []
+                    };
+                })
+            );
+            // console.log(invoicesWithItems)
+            res.status(200).json(invoicesWithItems);
 
 
         } catch (error) {
