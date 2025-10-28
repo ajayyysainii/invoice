@@ -9,6 +9,7 @@ interface IBuyers{
     email: string
     name: string
     phone: number
+    deleted: boolean
 }
 
 const buyerSchema = new Schema<IBuyers>({
@@ -24,6 +25,7 @@ const buyerSchema = new Schema<IBuyers>({
     address: { type: String },
     gst: { type: String },
     profilePictureLink: { type: String },
+    deleted: { type: Boolean, default: false }
 },{
     timestamps: true,
 })

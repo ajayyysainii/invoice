@@ -2,6 +2,13 @@
 import React, { useEffect } from 'react'
 import Image from 'next/image'
 import { getBuyers, Buyer } from '@/api/buyers'
+import {Trash,SquarePen} from 'lucide-react'
+import axios from 'axios'
+
+// interface Prop{
+//     onclick: ()=>void
+// }
+
 
 const BuyersList = () => {
 
@@ -16,6 +23,12 @@ const BuyersList = () => {
         setBuyers(list)
     }
 
+    const handleDeleteBuyer = async (id)=>{
+        console.log("delete buyer", id)
+
+        await axios.patch('http://localhost:4000/buyer/delete/'+id)
+
+    }
     return (
         <div className='bg-white w-[90%] h-[95%] rounded-md flex flex-col items-center gap-4 pt-6 overflow-auto'>
             {buyers.map((buyer) => (
@@ -31,14 +44,16 @@ const BuyersList = () => {
                         <p>{buyer.nameOfBusiness}</p>
                         <p>{buyer.phone}</p>
                     </div>
-                    <div>
-                        <p>1</p>
-                        <p>2</p>
-                        <p>3</p>
+                    <div className='flex flex-col items-center gap-3'>
+                        <p><Trash onClick={() => handleDeleteBuyer(buyer._id)} /></p>
+                        <p><SquarePen /></p>
                     </div>
                 </div>
             ))}
+             {buyers.length===0 && <div>No Buyers Found</div>}
         </div>
+
+       
     )
 }
 

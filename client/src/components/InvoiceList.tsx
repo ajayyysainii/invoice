@@ -140,19 +140,25 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, loading = false }) 
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-2">Client Details</h4>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    {invoice.buyerId.nameOfBusiness}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {invoice.buyerId.name}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {invoice.buyerId.email}
-                  </p>
-                  {invoice.buyerId.address && (
-                    <p className="text-sm text-gray-500">
-                      {invoice.buyerId.address}
-                    </p>
+                  {invoice.buyerId ? (
+                    <>
+                      <p className="text-sm font-medium text-gray-900">
+                        {invoice.buyerId.nameOfBusiness}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {invoice.buyerId.name}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {invoice.buyerId.email}
+                      </p>
+                      {invoice.buyerId.address && (
+                        <p className="text-sm text-gray-500">
+                          {invoice.buyerId.address}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-500">No client details available</p>
                   )}
                 </div>
               </div>
