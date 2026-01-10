@@ -1,6 +1,7 @@
 "use client"
 
 import InvoiceList from "@/components/InvoiceList"
+import { InvoiceItem } from "@/context/InvoiceContext"
 import axios from "axios"
 import { useEffect, useState } from "react"
 
@@ -23,6 +24,7 @@ interface Invoice {
   totalAmount: number
   createdAt: string
   updatedAt: string
+  items: InvoiceItem[]
 }
 
 export default function InvoiceListPage() {

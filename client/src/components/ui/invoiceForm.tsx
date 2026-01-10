@@ -1,10 +1,11 @@
 "use client";
-import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
+import { useForm, SubmitHandler, useFieldArray, set } from "react-hook-form";
 import { createInvoice } from "@/api/invoice";
 import { useEffect, useState, useContext } from "react";
 import { getBuyers, Buyer } from "@/api/buyers";
 import InvoiceContext, { InvoiceFormValues } from "@/context/InvoiceContext";
 import { X, Plus, Calculator } from "lucide-react";
+import { get } from "http";
 
 type FormValues = InvoiceFormValues;
 
@@ -24,7 +25,7 @@ const InvoiceForm = () => {
         console.error("Failed to load buyers", error);
       }
     })();
-  }, []);
+  }, [getBuyers]);
 
   const { register, handleSubmit, control, watch } = useForm<FormValues>({
     defaultValues: {
@@ -41,7 +42,7 @@ const InvoiceForm = () => {
     if (setInvoiceData) {
       setInvoiceData({ ...watchedFormValues });
     }
-  }, [watchedFormValues, setInvoiceData]);
+  }, [watchedFormValues,setInvoiceData]);
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     console.log(data);
