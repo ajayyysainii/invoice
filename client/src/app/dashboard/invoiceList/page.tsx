@@ -22,6 +22,7 @@ interface Invoice {
   invoiceNumber: string
   dueDate: string
   totalAmount: number
+  url?: string
   createdAt: string
   updatedAt: string
   items: InvoiceItem[]

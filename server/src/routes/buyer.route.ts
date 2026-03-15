@@ -10,5 +10,6 @@ router.post("/create",verifyToken, buyersController.createBuyer);
 router.get('/list',verifyToken,buyersController.listBuyer)
 router.get('/detail/:buyerId',verifyToken,buyersController.getBuyerDetail)
 router.patch('/delete/:buyerId',buyersController.deleteBuyer)
+router.put('/update/:buyerId', verifyToken, buyersController.updateBuyer)
 
 export default router;

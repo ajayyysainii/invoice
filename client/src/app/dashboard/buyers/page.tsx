@@ -1,16 +1,9 @@
 import BuyersList from '@/components/BuyersList'
-import BuyerCreate from '@/components/BuyerCreate'
-const ManageBuyers = () => {
-    
 
-       return (
-        <div className='flex max-w-screen h-screen'>
-            <div className='w-[50%] bg-gradient-to-b from-gray-50 to-white  flex flex-col justify-center items-center'>
-                <BuyerCreate/>
-            </div>
-            <div className='w-[50%] bg-orange-200 flex flex-col justify-center items-center'>
-               <BuyersList />
-            </div>
+const ManageBuyers = () => {
+    return (
+        <div className='min-h-screen bg-gray-50'>
+            <BuyersList />
         </div>
     )
 }

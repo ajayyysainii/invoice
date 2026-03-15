@@ -1,16 +1,18 @@
 "use client";
-import { useForm, SubmitHandler, useFieldArray, set } from "react-hook-form";
+import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
 import { createInvoice } from "@/api/invoice";
 import { useEffect, useState, useContext } from "react";
 import { getBuyers, Buyer } from "@/api/buyers";
+import { getCatalogItemsForBuyer, CatalogItem } from "@/api/itemCatalog";
 import InvoiceContext, { InvoiceFormValues } from "@/context/InvoiceContext";
 import { X, Plus, Calculator } from "lucide-react";
-import { get } from "http";
+
 
 type FormValues = InvoiceFormValues;
 
 const InvoiceForm = () => {
   const [buyers, setBuyers] = useState<Buyer[]>([]);
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
 
   const contextValue = useContext(InvoiceContext);
   const setInvoiceData = contextValue?.setInvoiceData;
@@ -25,24 +27,47 @@ const InvoiceForm = () => {
         console.error("Failed to load buyers", error);
       }
     })();
-  }, [getBuyers]);
+  }, []);
 
-  const { register, handleSubmit, control, watch } = useForm<FormValues>({
+  const { register, handleSubmit, control, watch, setValue } = useForm<FormValues>({
     defaultValues: {
       invoice: "",
       dueDate: "",
       buyerId: "",
-      items: [{ item: "", quantity: 0, price: 0, tax: 0, discount: 0 }],
+      items: [{ item: "", quantity: 1, price: 0, tax: 0, discount: 0 }],
     },
   });
 
-  // Watch all form values and sync to context on every change
-  const watchedFormValues = watch();
+  // Watch buyerId and fetch catalog items when it changes
+  const selectedBuyerId = watch("buyerId");
   useEffect(() => {
-    if (setInvoiceData) {
-      setInvoiceData({ ...watchedFormValues });
-    }
-  }, [watchedFormValues,setInvoiceData]);
+    const fetchCatalogItems = async () => {
+      try {
+        if (selectedBuyerId) {
+          const items = await getCatalogItemsForBuyer(selectedBuyerId);
+          setCatalogItems(items);
+        } else {
+          // Fetch global-only items when no buyer selected
+          const items = await getCatalogItemsForBuyer('global');
+          setCatalogItems(items);
+        }
+      } catch (error) {
+        console.error('Failed to fetch catalog items:', error);
+        setCatalogItems([]);
+      }
+    };
+    fetchCatalogItems();
+  }, [selectedBuyerId]);
+
+  // Watch all form values and sync to context on every change
+  useEffect(() => {
+    const subscription = watch((formValues) => {
+      if (setInvoiceData) {
+        setInvoiceData({ ...formValues } as FormValues);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, setInvoiceData]);
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     console.log(data);
@@ -180,7 +205,7 @@ const InvoiceForm = () => {
                   append({
                     item: "",
                     price: 0,
-                    quantity: 0,
+                    quantity: 1,
                     tax: 0,
                     discount: 0,
                   })
@@ -227,12 +252,36 @@ const InvoiceForm = () => {
                       className="hover:bg-gray-50 transition-colors duration-150"
                     >
                       <td className="px-4 py-3">
-                        <input
-                          type="text"
-                          placeholder="Item name"
+                        <select
                           {...register(`items.${index}.item`)}
-                          className="w-full px-3 py-2 bg-transparent border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-400"
-                        />
+                          onChange={(e) => {
+                            const selectedName = e.target.value;
+                            setValue(`items.${index}.item`, selectedName);
+                            const catalogItem = catalogItems.find(ci => ci.name === selectedName);
+                            if (catalogItem) {
+                              setValue(`items.${index}.price`, catalogItem.price);
+                              setValue(`items.${index}.tax`, catalogItem.tax || 0);
+                              setValue(`items.${index}.discount`, catalogItem.discount || 0);
+                            }
+                          }}
+                          className="w-full px-3 py-2 bg-transparent border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 appearance-none cursor-pointer"
+                        >
+                          <option value="">Select item</option>
+                          {catalogItems.map((ci) => (
+                            <option key={ci._id} value={ci.name}>
+                              {ci.name} — ₹{ci.price}
+                            </option>
+                          ))}
+                          <option value="__custom">✏️ Custom Item</option>
+                        </select>
+                        {watch(`items.${index}.item`) === '__custom' && (
+                          <input
+                            type="text"
+                            placeholder="Enter custom item name"
+                            onChange={(e) => setValue(`items.${index}.item`, e.target.value)}
+                            className="w-full mt-2 px-3 py-2 bg-transparent border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-400"
+                          />
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <input

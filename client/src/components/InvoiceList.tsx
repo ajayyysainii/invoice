@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState } from 'react'
-import InvoicePDF from './ui/InvoicePDF'
+import React from 'react'
+import axios from 'axios'
 
 interface Buyer {
   _id: string
@@ -28,6 +28,7 @@ interface Invoice {
   invoiceNumber: string
   dueDate: string
   totalAmount: number
+  url?: string
   createdAt: string
   updatedAt: string
   items: InvoiceItem[]
@@ -39,8 +40,6 @@ interface InvoiceListProps {
 }
 
 const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, loading = false }) => {
-  const [invoicePdf, setInvoicePdf] = useState(false)
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -58,14 +57,37 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, loading = false }) 
     }).format(amount)
   }
 
-  const handleDownload = (invoice: Invoice) => {
-    setSelectedInvoice(invoice)
-    setInvoicePdf(true)
+  const getPresignedUrl = async (invoiceId: string): Promise<string | null> => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await axios.get(`http://localhost:4000/invoice/pdf/${invoiceId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      return response.data.url
+    } catch (error) {
+      console.error('Failed to get presigned URL:', error)
+      return null
+    }
   }
 
-  const handleClosePDF = () => {
-    setInvoicePdf(false)
-    setSelectedInvoice(null)
+  const handleViewPdf = async (invoice: Invoice) => {
+    const url = await getPresignedUrl(invoice._id)
+    if (url) {
+      window.open(url, '_blank')
+    }
+  }
+
+  const handleDownload = async (invoice: Invoice) => {
+    const url = await getPresignedUrl(invoice._id)
+    if (url) {
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `invoice-${invoice.invoiceNumber}.pdf`
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
   }
 
 
@@ -165,7 +187,11 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, loading = false }) 
               
               <div className="flex justify-end items-end">
                 <div className="flex space-x-2">
-                  <button className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                  <button 
+                    onClick={() => handleViewPdf(invoice)}
+                    disabled={!invoice.url}
+                    className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     View
                   </button>
                   <button className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
@@ -173,7 +199,8 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, loading = false }) 
                   </button>
                   <button 
                     onClick={() => handleDownload(invoice)}
-                    className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    disabled={!invoice.url}
+                    className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Download
                   </button>
@@ -183,13 +210,6 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, loading = false }) 
           </div>
         </div>
       ))}
-      
-      {invoicePdf && selectedInvoice && (
-        <InvoicePDF 
-          onClose={handleClosePDF}
-          invoice={selectedInvoice}
-        />
-      )}
     </div>
   )
 }

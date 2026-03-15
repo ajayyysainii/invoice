@@ -28,6 +28,11 @@ export async function getBuyerDetail(buyerId: string): Promise<Buyer> {
     return response.data.message as Buyer
 }
 
+export async function updateBuyer(buyerId: string, payload: Partial<BuyerPayload>): Promise<void> {
+    await api.put(`/buyer/update/${buyerId}`, payload)
+}
 
-
+export async function deleteBuyer(buyerId: string): Promise<void> {
+    await api.patch(`/buyer/delete/${buyerId}`)
+}
 

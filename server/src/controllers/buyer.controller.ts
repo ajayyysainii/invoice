@@ -81,4 +81,25 @@ export class BuyersController {
         .json({ success: "false", message: "Error is occured: ", error });
     }
   };
+
+  updateBuyer = async (req: Request, res: Response) => {
+    try {
+      const { buyerId } = req.params;
+      const { name, email, nameOfBusiness, phone, address, gst } = req.body;
+
+      const updated = await Buyers.findByIdAndUpdate(
+        buyerId,
+        { name, email, nameOfBusiness, phone, address, gst },
+        { new: true }
+      );
+
+      if (!updated) {
+        return res.status(404).json({ success: false, message: "Buyer not found" });
+      }
+
+      return res.status(200).json({ success: true, message: "Buyer updated", buyer: updated });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: "Failed to update buyer", error });
+    }
+  };
 }

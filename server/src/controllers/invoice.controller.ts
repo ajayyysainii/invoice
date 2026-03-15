@@ -2,9 +2,26 @@ import Items from "../models/invoice/items.model";
 import Invoice from "../models/invoice/invoice.model";
 import { Request,Response } from "express";
 import puppeteer from 'puppeteer';
+import {
+    S3Client,
+    PutObjectCommand,
+    GetObjectCommand,
+    ListObjectsV2Command,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+const r2Client = new S3Client({
+    region: "auto",
+    endpoint: "https://956854b83476ec7aadcc4cba36d15db1.r2.cloudflarestorage.com",
+    credentials: {
+        accessKeyId: "90fb93e2dca285a135c621b4f3f274b1",
+        secretAccessKey: "0ae5e84442280960c3a37bc7dc696f80fbaaa1d56903ec61c4e5e2316c94f5cd",
+    },
+});
 
 
 export class InvoiceController{
+
     createInvoice = async (req:Request,res:Response) => {
         try {
             const userId = (req.user as unknown as { id?: string })?.id;
@@ -21,7 +38,7 @@ export class InvoiceController{
 
             const invoiceId = invoiceDetail._id;
             const {items} = req.body;
-            const itemDetail = await Items.create({invoiceId,items})
+
 
             const browser = await puppeteer.launch();
             const page = await browser.newPage();
@@ -448,10 +465,34 @@ export class InvoiceController{
             `
             await page.setContent(htmlContent)
 
-            await page.pdf({ path: 'example.pdf', format: 'Letter' });
+            const pdfBuffer = await page.pdf({ format: 'Letter' });
+
+
+
+            const pdfKey = `${invoiceDetail.invoiceNumber}.pdf`;
+            let r2PublicUrl = '';
+
+            try {
+                const response = await r2Client.send(new PutObjectCommand({
+                    Bucket: "invoice",
+                    Key: pdfKey,
+                    ContentType: "application/pdf",
+                    Body: pdfBuffer,
+                }));
+
+                console.log("PDF Uploaded Successfully",response);
+
+                // Construct the R2 public URL and save it to the invoice
+                r2PublicUrl = `https://956854b83476ec7aadcc4cba36d15db1.r2.cloudflarestorage.com/invoice/${pdfKey}`;
+                await Invoice.findByIdAndUpdate(invoiceId, { url: r2PublicUrl });
+                
+            } catch (error) {
+                console.log("R2 upload failed:", error);
+            }
 
 
             await browser.close();
+            const itemDetail = await Items.create({invoiceId,items})
 
 
             console.log(invoiceDetail)
@@ -459,7 +500,7 @@ export class InvoiceController{
             
 
             
-            return res.json({message: 'true'})
+            return res.json({message: 'true', invoiceId, url: r2PublicUrl})
         } catch (error) {
             return res.status(400).json({message: 'false',error: error})
         }
@@ -487,6 +528,31 @@ export class InvoiceController{
 
         } catch (error) {
             res.status(400).json(error)
+        }
+    }
+
+    getPresignedUrl = async (req: Request, res: Response) => {
+        try {
+            const { invoiceId } = req.params;
+            const invoice = await Invoice.findById(invoiceId);
+
+            if (!invoice) {
+                return res.status(404).json({ message: 'Invoice not found' });
+            }
+
+            const pdfKey = `${invoice.invoiceNumber}.pdf`;
+
+            const command = new GetObjectCommand({
+                Bucket: "invoice",
+                Key: pdfKey,
+            });
+
+            const presignedUrl = await getSignedUrl(r2Client, command, { expiresIn: 3600 });
+
+            return res.json({ url: presignedUrl });
+        } catch (error) {
+            console.error('Failed to generate presigned URL:', error);
+            return res.status(500).json({ message: 'Failed to generate presigned URL', error });
         }
     }
 

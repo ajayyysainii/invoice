@@ -8,6 +8,7 @@ interface IInvoice {
     dueDate: string
     amount: number
     discount: number
+    url:string
     totalAmount: number
 }
 
@@ -16,6 +17,10 @@ const InvoiceSchema = new Schema<IInvoice>({
         type: mongoose.Schema.ObjectId,
         required: false,
         ref: 'User'
+    },
+    url:{
+        type:String,
+        required:false
     },
     buyerId: {
         type: mongoose.Schema.ObjectId,

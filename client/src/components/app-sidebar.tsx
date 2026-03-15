@@ -1,5 +1,5 @@
 "use client"
-import { Calendar, Home, Inbox, Settings, ChevronUp, User2 } from "lucide-react"
+import { Calendar, Home, Inbox, Settings, ChevronUp, User2, Package } from "lucide-react"
 import {
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -45,6 +45,11 @@ const items = [
     title: "Manage Buyers",
     url: "/dashboard/buyers",
     icon: Calendar,
+  },
+  {
+    title: "Item Catalog",
+    url: "/dashboard/items",
+    icon: Package,
   },
   {
     title: "Settings",
