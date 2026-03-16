@@ -5,6 +5,7 @@ import connectDB from "./config/mongodb"
 import MODULE_ROUTE_MAPPING from "./app";
 import { server } from "typescript";
 import morgan from 'morgan'
+import mongoose, { Schema } from "mongoose";
 import {
     S3Client,
     PutObjectCommand,
@@ -18,6 +19,21 @@ const app = express();
 const port = process.env.PORT || 4000
 
 connectDB();
+
+interface IJsonPayload {
+    data: Record<string, unknown>;
+}
+
+const jsonPayloadSchema = new Schema<IJsonPayload>({
+    data: {
+        type: Schema.Types.Mixed,
+        required: true
+    }
+}, {
+    timestamps: true
+});
+
+const JsonPayload = mongoose.models.JsonPayload || mongoose.model<IJsonPayload>("JsonPayload", jsonPayloadSchema);
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
@@ -65,6 +81,34 @@ app.post("/test", async (req: Request, res: Response) => {
     } catch (error) {
         console.log(error);
         res.json({ success: false, message: "File not uploaded to R2",error:error });
+    }
+})
+
+app.post("/save-json", async (req: Request, res: Response) => {
+    try {
+        const payload = req.body;
+
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid JSON payload. Expected a JSON object."
+            });
+        }
+
+        const savedData = await JsonPayload.create({ data: payload });
+
+        return res.status(201).json({
+            success: true,
+            message: "JSON saved to MongoDB successfully.",
+            data: savedData
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to save JSON payload.",
+            error
+        });
     }
 })
 
