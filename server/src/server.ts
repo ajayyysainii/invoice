@@ -41,15 +41,42 @@ const GOOGLE_SHEET_NAME = process.env.GOOGLE_SHEET_NAME || "Sheet1";
 const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
 
-const formatSheetTime = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    const seconds = String(date.getSeconds()).padStart(2, "0");
-    return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+const columnToA1 = (col: number) => {
+    let n = col;
+    let s = "";
+    while (n > 0) {
+        const r = (n - 1) % 26;
+        s = String.fromCharCode(65 + r) + s;
+        n = Math.floor((n - 1) / 26);
+    }
+    return s;
 }
+
+const formatSheetTimeIST = (date: Date) => {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+    }).formatToParts(date);
+
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+    // en-GB gives DD/MM/YYYY, we convert to DD-MM-YYYY HH:mm:ss
+    return `${get("day")}-${get("month")}-${get("year")} ${get("hour")}:${get("minute")}:${get("second")}`;
+}
+
+type SensorReading = {
+    voltage?: unknown;
+    current?: unknown;
+    power?: unknown;
+}
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+    typeof v === "object" && v !== null && !Array.isArray(v);
 
 const appendJsonToGoogleSheet = async (payload: Record<string, unknown>) => {
     if (!GOOGLE_SHEET_ID || !GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) {
@@ -66,22 +93,77 @@ const appendJsonToGoogleSheet = async (payload: Record<string, unknown>) => {
 
     const inputTime = typeof payload.time === "string" ? new Date(payload.time) : new Date();
     const isValidTime = !Number.isNaN(inputTime.getTime());
-    const timeValue = formatSheetTime(isValidTime ? inputTime : new Date());
-    const voltageValue = payload.voltage ?? "";
-    const currentValue = payload.current ?? "";
-    const powerValue = payload.power ?? "";
+    const timeValue = formatSheetTimeIST(isValidTime ? inputTime : new Date());
+
+    const sensors: Record<string, SensorReading> = {};
+    Object.entries(payload).forEach(([key, value]) => {
+        if (key === "time") return;
+        if (!isPlainObject(value)) return;
+        sensors[key] = {
+            voltage: (value as Record<string, unknown>).voltage,
+            current: (value as Record<string, unknown>).current,
+            power: (value as Record<string, unknown>).power,
+        };
+    });
+
+    const metricKeys = ["voltage", "current", "power"] as const;
+    const sensorKeys = Object.keys(sensors).sort();
+    const desiredHeader = ["time", ...sensorKeys.flatMap((s) => metricKeys.map((m) => `${s}_${m}`))];
+
+    const headerResp = await sheets.spreadsheets.values.get({
+        spreadsheetId: GOOGLE_SHEET_ID,
+        range: `${GOOGLE_SHEET_NAME}!1:1`,
+    });
+
+    const existingHeader = (headerResp.data.values?.[0] as string[] | undefined) ?? [];
+    const headerSet = new Set(existingHeader.filter(Boolean));
+    const missing = desiredHeader.filter((h) => !headerSet.has(h));
+    const finalHeader = existingHeader.length ? [...existingHeader, ...missing] : desiredHeader;
+
+    if (finalHeader.length !== existingHeader.length) {
+        const lastCol = columnToA1(finalHeader.length);
+        await sheets.spreadsheets.values.update({
+            spreadsheetId: GOOGLE_SHEET_ID,
+            range: `${GOOGLE_SHEET_NAME}!A1:${lastCol}1`,
+            valueInputOption: "RAW",
+            requestBody: { values: [finalHeader] }
+        });
+    }
+
+    const rowByHeader = new Map<string, unknown>();
+    rowByHeader.set("time", timeValue);
+    sensorKeys.forEach((s) => {
+        const r = sensors[s] || {};
+        rowByHeader.set(`${s}_voltage`, r.voltage ?? "");
+        rowByHeader.set(`${s}_current`, r.current ?? "");
+        rowByHeader.set(`${s}_power`, r.power ?? "");
+    });
+
+    const row = finalHeader.map((h) => rowByHeader.get(h) ?? "");
+    const lastCol = columnToA1(finalHeader.length);
 
     await sheets.spreadsheets.values.append({
         spreadsheetId: GOOGLE_SHEET_ID,
-        range: `${GOOGLE_SHEET_NAME}!A:D`,
+        range: `${GOOGLE_SHEET_NAME}!A:${lastCol}`,
         valueInputOption: "USER_ENTERED",
-        requestBody: {
-            values: [[timeValue, voltageValue, currentValue, powerValue]]
-        }
+        requestBody: { values: [row] }
     });
 }
 
-app.use(express.json())
+// Accept JSON bodies, but tolerate common non-JSON tokens from sensors (inf/Infinity/NaN)
+app.use(express.text({ type: ["application/json", "application/*+json"], limit: "1mb" }))
+app.use((req, _res, next) => {
+    if (typeof req.body === "string" && (req.is("application/json") || req.is("application/*+json"))) {
+        const raw = req.body;
+        const sanitized = raw.replace(/\b(inf|Infinity|NaN)\b/g, "null");
+        try {
+            req.body = JSON.parse(sanitized);
+        } catch (e) {
+            return next(e);
+        }
+    }
+    next();
+})
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"))
 app.use(cors(
@@ -90,6 +172,17 @@ app.use(cors(
         credentials: true,
     }
 ))
+
+// Clean 400 response for invalid JSON bodies
+app.use((err: unknown, _req: Request, res: Response, next: (err?: unknown) => void) => {
+    if (err instanceof SyntaxError) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid JSON body. If your sensor sends Infinity/inf/NaN, send it as null or string."
+        });
+    }
+    next(err);
+})
 
 
 
