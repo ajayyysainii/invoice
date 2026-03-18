@@ -7,6 +7,7 @@ import { server } from "typescript";
 import morgan from 'morgan'
 import mongoose, { Schema } from "mongoose";
 import { google } from "googleapis";
+import JsonPayload2 from "./models/jsonPayload2.model";
 import {
     S3Client,
     PutObjectCommand,
@@ -281,6 +282,50 @@ app.post("/save-json", async (req: Request, res: Response) => {
 
 
 
+
+app.post("/save-json-2", async (req: Request, res: Response) => {
+    try {
+        const payload = req.body as unknown;
+
+        if (!isPlainObject(payload)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid payload. Expected a JSON object.",
+            });
+        }
+
+        const obj = payload as Record<string, unknown>;
+        const hasVcp = "voltage" in obj && "current" in obj && "power" in obj;
+
+        if (!hasVcp) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid payload. Expected: { \"voltage\": ..., \"current\": ..., \"power\": ... }",
+            });
+        }
+
+        const shaped = {
+            voltage: obj.voltage,
+            current: obj.current,
+            power: obj.power,
+        };
+
+        const savedDoc = await JsonPayload2.create({ data: shaped });
+
+        return res.status(201).json({
+            success: true,
+            message: "JSON saved to MongoDB successfully (save-json-2).",
+            data: savedDoc,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to save JSON payload (save-json-2).",
+            error,
+        });
+    }
+})
 
 app.listen(port, () => {
     console.log(`Server is Running! at Port ${port}`);
