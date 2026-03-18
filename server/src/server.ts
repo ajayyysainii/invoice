@@ -327,6 +327,23 @@ app.post("/save-json-2", async (req: Request, res: Response) => {
     }
 })
 
+app.get("/save-json-2", async (_req: Request, res: Response) => {
+    try {
+        const docs = await JsonPayload2.find().sort({ createdAt: -1 });
+        return res.status(200).json({
+            success: true,
+            data: docs,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch save-json-2 readings.",
+            error,
+        });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Server is Running! at Port ${port}`);
 });
