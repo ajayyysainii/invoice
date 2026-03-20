@@ -8,6 +8,7 @@ import morgan from 'morgan'
 import mongoose, { Schema } from "mongoose";
 import { google } from "googleapis";
 import JsonPayload2 from "./models/jsonPayload2.model";
+import JsonPayload3 from "./models/jsonPayload3.model";
 import {
     S3Client,
     PutObjectCommand,
@@ -156,7 +157,12 @@ app.use(express.text({ type: ["application/json", "application/*+json"], limit: 
 app.use((req, _res, next) => {
     if (typeof req.body === "string" && (req.is("application/json") || req.is("application/*+json"))) {
         const raw = req.body;
-        const sanitized = raw.replace(/\b(inf|Infinity|NaN)\b/g, "null");
+        // Only replace unquoted tokens like: { "x": NaN } or [Infinity]
+        // If it's inside quotes like: { "x": "NaN" }, it will NOT match this regex.
+        const sanitized = raw.replace(
+            /(^|[\s\[\{\:,])(-?(?:inf|Infinity|NaN))(?=($|[\s\]\}\:,]))/gi,
+            (_match, prefix) => `${prefix}null`
+        );
         try {
             req.body = JSON.parse(sanitized);
         } catch (e) {
@@ -339,6 +345,29 @@ app.get("/save-json-2", async (_req: Request, res: Response) => {
         return res.status(500).json({
             success: false,
             message: "Failed to fetch save-json-2 readings.",
+            error,
+        });
+    }
+});
+
+app.post("/save-json-3", async (req: Request, res: Response) => {
+    try {
+        // Payload can be ANY valid JSON value (object/array/string/number/null)
+        // Non-standard tokens like Infinity/NaN/inf are sanitized by the middleware above.
+        const payload = req.body as unknown;
+
+        const savedDoc = await JsonPayload3.create({ data: payload });
+
+        return res.status(201).json({
+            success: true,
+            message: "JSON saved to MongoDB successfully (save-json-3).",
+            data: savedDoc,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to save JSON payload (save-json-3).",
             error,
         });
     }
