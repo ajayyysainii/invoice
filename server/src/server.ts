@@ -24,7 +24,7 @@ const port = process.env.PORT || 4000
 connectDB();
 
 interface IJsonPayload {
-    data: Record<string, unknown>;
+    data: unknown;
 }
 
 const jsonPayloadSchema = new Schema<IJsonPayload>({
@@ -71,16 +71,10 @@ const formatSheetTimeIST = (date: Date) => {
     return `${get("day")}-${get("month")}-${get("year")} ${get("hour")}:${get("minute")}:${get("second")}`;
 }
 
-type SensorReading = {
-    voltage?: unknown;
-    current?: unknown;
-    power?: unknown;
-}
-
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
     typeof v === "object" && v !== null && !Array.isArray(v);
 
-const appendJsonToGoogleSheet = async (payload: Record<string, unknown>) => {
+const appendJsonToGoogleSheet = async (payload: unknown) => {
     if (!GOOGLE_SHEET_ID || !GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) {
         throw new Error("Missing Google Sheets configuration in environment variables.");
     }
@@ -93,24 +87,17 @@ const appendJsonToGoogleSheet = async (payload: Record<string, unknown>) => {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    const inputTime = typeof payload.time === "string" ? new Date(payload.time) : new Date();
+    const payloadObj = isPlainObject(payload) ? payload : { value: payload };
+    const inputTime = typeof payloadObj.time === "string" ? new Date(payloadObj.time) : new Date();
     const isValidTime = !Number.isNaN(inputTime.getTime());
     const timeValue = formatSheetTimeIST(isValidTime ? inputTime : new Date());
-
-    const sensors: Record<string, SensorReading> = {};
-    Object.entries(payload).forEach(([key, value]) => {
-        if (key === "time") return;
-        if (!isPlainObject(value)) return;
-        sensors[key] = {
-            voltage: (value as Record<string, unknown>).voltage,
-            current: (value as Record<string, unknown>).current,
-            power: (value as Record<string, unknown>).power,
-        };
-    });
-
-    const metricKeys = ["voltage", "current", "power"] as const;
-    const sensorKeys = Object.keys(sensors).sort();
-    const desiredHeader = ["time", ...sensorKeys.flatMap((s) => metricKeys.map((m) => `${s}_${m}`))];
+    const payloadEntries = Object.entries(payloadObj)
+        .filter(([key]) => key !== "time")
+        .map(([key, value]) => [
+            key,
+            isPlainObject(value) || Array.isArray(value) ? JSON.stringify(value) : value
+        ] as const);
+    const desiredHeader = ["time", ...payloadEntries.map(([key]) => key)];
 
     const headerResp = await sheets.spreadsheets.values.get({
         spreadsheetId: GOOGLE_SHEET_ID,
@@ -134,11 +121,8 @@ const appendJsonToGoogleSheet = async (payload: Record<string, unknown>) => {
 
     const rowByHeader = new Map<string, unknown>();
     rowByHeader.set("time", timeValue);
-    sensorKeys.forEach((s) => {
-        const r = sensors[s] || {};
-        rowByHeader.set(`${s}_voltage`, r.voltage ?? "");
-        rowByHeader.set(`${s}_current`, r.current ?? "");
-        rowByHeader.set(`${s}_power`, r.power ?? "");
+    payloadEntries.forEach(([key, value]) => {
+        rowByHeader.set(key, value ?? "");
     });
 
     const row = finalHeader.map((h) => rowByHeader.get(h) ?? "");
@@ -232,14 +216,7 @@ app.post("/test", async (req: Request, res: Response) => {
 
 app.post("/save-json", async (req: Request, res: Response) => {
     try {
-        const payload = req.body;
-
-        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid JSON payload. Expected a JSON object."
-            });
-        }
+        const payload = req.body as unknown;
 
         const savedData = await JsonPayload.create({ data: payload });
         let sheetSaved = false;
